@@ -1,0 +1,31 @@
+# cmake
+build/
+.cache/
+
+#example
+example/counter/build/
+example/counter/data/
+example/counter/runtime/
+example/counter/*.tar.xz
+example/counter/output*.txt
+example/counter/counter_*
+
+runtime/0/
+runtime/1/
+runtime/2/
+# useless
+docs/
+test/
+
+#misc
+*.xlsx
+*.docx
+
+# source_trail
+*.srctrlbm
+*.srctrldb
+*.srctrlprj
+
+# clangd log
+clangdoutput.txt
+readme.txt

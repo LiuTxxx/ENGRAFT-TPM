@@ -1,0 +1,122 @@
+cmake_minimum_required(VERSION 2.8.10)
+
+# If you want clang.
+# find_program(CMAKE_CXX_COMPILER clang++-8 clang++)
+# find_program(CMAKE_C_COMPILER clang-8 clang)
+
+project(counter C CXX)
+
+# This option is used to pass compilation when running in OS totally
+add_compile_definitions(RUN_OUTSIDE_SGX)
+
+# This option is used to enable features that doesn't use in SGX-Raft
+# add_compile_definitions(USE_NORMAL_FUNCTION)
+
+option(EXAMPLE_LINK_SO "Whether examples are linked dynamically" OFF)
+option(LINK_TCMALLOC "Link tcmalloc if possible" OFF)
+
+execute_process(
+    COMMAND bash -c "find ${CMAKE_SOURCE_DIR}/../.. -type d -path \"*output/include/braft\" | xargs dirname | xargs dirname | tr -d '\n'"
+    OUTPUT_VARIABLE OUTPUT_PATH
+)
+
+set(CMAKE_PREFIX_PATH ${OUTPUT_PATH})
+
+include(FindThreads)
+include(MYFindProtobuf.cmake)
+set(PROTO_FILES counter.proto)
+compile_proto_2(PROTO_HEADER PROTO_SRC ${PROJECT_BINARY_DIR}
+                                    ${PROJECT_SOURCE_DIR}
+                                    "${PROTO_FILES}")
+                                    
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+# find_path(BRPC_INCLUDE_PATH NAMES brpc/server.h)
+# 手动设置brpc path
+# set(BRPC_INCLUDE_PATH "/root/project/SGX_BRAFT/brpc-0.9.7/build/output/include")
+if(EXAMPLE_LINK_SO)
+    # find_library(BRPC_LIB NAMES brpc)
+    # set(BRPC_LIB "/root/project/SGX_BRAFT/brpc-0.9.7/build/output/lib/libbrpc.so")
+    find_library(BRAFT_LIB NAMES braft)
+else()
+    # find_library(BRPC_LIB NAMES libbrpc.a brpc)
+    # set(BRPC_LIB "/root/project/SGX_BRAFT/brpc-0.9.7/build/output/lib/libbrpc.a")
+    find_library(BRAFT_LIB NAMES libbraft.a braft)
+endif()
+message(Find_BRAFT_LIB: ${BRAFT_LIB})
+
+# include_directories(${BRPC_INCLUDE_PATH})
+
+find_path(BRAFT_INCLUDE_PATH NAMES braft/raft.h)
+message(Find_BRAFT_INCLUDE_PATH: ${BRAFT_INCLUDE_PATH})
+
+if ((NOT BRAFT_INCLUDE_PATH) OR (NOT BRAFT_LIB))
+    message (FATAL_ERROR "Fail to find braft")
+endif()
+include_directories(${BRAFT_INCLUDE_PATH})
+
+
+
+if (LINK_TCMALLOC)
+    find_path(GPERFTOOLS_INCLUDE_DIR NAMES gperftools/heap-profiler.h)
+    find_library(GPERFTOOLS_LIBRARIES NAMES tcmalloc_and_profiler)
+    if (GPERFTOOLS_INCLUDE_DIR AND GPERFTOOLS_LIBRARIES)
+        set(CMAKE_CXX_FLAGS "-DBRPC_ENABLE_CPU_PROFILER")
+        include_directories(${GPERFTOOLS_INCLUDE_DIR})
+    else ()
+        set (GPERFTOOLS_LIBRARIES "")
+    endif ()
+endif ()
+
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CPP_FLAGS} -DGFLAGS_NS=google -DNDEBUG -O2 -D__const__= -pipe -W -Wall -Wno-unused-parameter -fPIC -fno-omit-frame-pointer")
+# 加入 -g 参数，开启调试功能
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CPP_FLAGS} -DGFLAGS_NS=google -O2 -g -D__const__= -pipe -W -Wall -Wno-unused-parameter -fPIC -fno-omit-frame-pointer")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # require at least gcc 4.8
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+        message(FATAL_ERROR "GCC is too old, please install a newer version supporting C++11")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # require at least clang 3.3
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
+        message(FATAL_ERROR "Clang is too old, please install a newer version supporting C++11")
+    endif()
+else()
+    message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
+endif()
+
+if(CMAKE_VERSION VERSION_LESS "3.1.3")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif()
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    endif()
+else()
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
+# 这里不需要再生成 client 了，client 要用到 bthread，而sgx-braft server不再使用bthread
+# add_executable(counter_client client.cpp ${PROTO_SRC} ${PROTO_HEADER})
+add_executable(counter_server server.cpp ${PROTO_SRC} ${PROTO_HEADER})
+
+set(DYNAMIC_LIB
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${GPERFTOOLS_LIBRARIES}
+    ${BRAFT_LIB}
+    rt
+    ssl
+    crypto
+    dl
+    z
+    )
+
+# target_link_libraries(counter_client
+#                       "-Xlinker \"-(\""
+#                       ${DYNAMIC_LIB}
+#                       "-Xlinker \"-)\"")
+target_link_libraries(counter_server
+                      "-Xlinker \"-(\""
+                      ${DYNAMIC_LIB}
+                      "-Xlinker \"-)\"")

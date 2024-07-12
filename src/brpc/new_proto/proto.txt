@@ -1,0 +1,18 @@
+用于生成proto文件的命令
+
+export PROTOPATH=/root/protobuf-2.4.1-installation
+$PROTOPATH/bin/protoc -I$PROTOPATH/include --cpp_out=. --proto_path=$PROTOPATH/include --proto_path=/root/code_dev/sgxbraft_006/src /root/code_dev/sgxbraft_006/src/brpc/builtin_service.proto
+
+/root/code_dev/protobuf-2.4.1/installed/bin/protoc -I/root/code_dev/protobuf-2.4.1/installed/include --cpp_out=/root/project/SGX_BRAFT/sgxbraft/src/brpc/new_proto --proto_path=/root/code_dev/protobuf-2.4.1/installed/include --proto_path=/root/project/SGX_BRAFT/sgxbraft/src /root/project/SGX_BRAFT/sgxbraft/src/brpc/builtin_service.proto
+
+/root/code_dev/protobuf-2.4.1/installed/bin/protoc -I/root/code_dev/protobuf-2.4.1/installed/include --cpp_out=/root/project/SGX_BRAFT/sgxbraft/src/brpc/new_proto --proto_path=/root/code_dev/protobuf-2.4.1/installed/include --proto_path=/root/project/SGX_BRAFT/sgxbraft/src /root/project/SGX_BRAFT/sgxbraft/src/brpc/policy/baidu_rpc_meta.proto
+
+
+用于sgxbutil/state_cont里
+/root/code_dev/protobuf-2.4.1/installed/bin/protoc -I/root/code_dev/protobuf-2.4.1/installed/include --cpp_out=/root/project/SGX_BRAFT/sgxbraft/enclave/brpc/new_proto --proto_path=/root/code_dev/protobuf-2.4.1/installed/include --proto_path=/root/project/SGX_BRAFT/sgxbraft/enclave /root/project/SGX_BRAFT/sgxbraft/enclave/sgxbutil/state_cont/counter_list.proto
+
+braft里
+/root/code_dev/protobuf-2.4.1/installed/bin/protoc -I/root/code_dev/protobuf-2.4.1/installed/include --cpp_out=/root/project/SGX_BRAFT/sgxbraft/src/brpc/new_proto --proto_path=/root/code_dev/protobuf-2.4.1/installed/include --proto_path=/root/project/SGX_BRAFT/sgxbraft/src /root/project/SGX_BRAFT/sgxbraft/src/braft/local_storage.proto
+
+用于sgxbutil/state_cont里
+/root/code_dev/protobuf-2.4.1/installed/bin/protoc -I/root/code_dev/protobuf-2.4.1/installed/include --cpp_out=/root/project/SGX_BRAFT/sgxbraft/src/brpc/new_proto --proto_path=/root/code_dev/protobuf-2.4.1/installed/include --proto_path=/root/project/SGX_BRAFT/sgxbraft/src /root/project/SGX_BRAFT/sgxbraft/src/sgxbutil/state_cont/counter_rpc.proto

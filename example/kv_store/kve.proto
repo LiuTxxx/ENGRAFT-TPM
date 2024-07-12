@@ -1,0 +1,23 @@
+syntax="proto2";
+package kv_enclave;
+option cc_generic_services = true;
+
+message KVStoreRequest {
+    required string key = 1;
+    required bytes value = 2;
+};
+
+message KVLoadRequest {
+    required string key = 1;
+};
+
+message KVResponse {
+    required bool success = 1;
+    optional bytes value = 2;
+    optional string redirect = 3;
+};
+
+service KVStoreService {
+    rpc store_kv_item(KVStoreRequest) returns (KVResponse);
+    rpc load_kv_item(KVLoadRequest) returns (KVResponse);
+};
